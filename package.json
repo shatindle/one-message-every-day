@@ -1,0 +1,30 @@
+{
+  "name": "one-message-every-day",
+  "version": "1.0.0",
+  "description": "A discord bot that prevents a channel from having more than 1 message every day",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shatindle/one-message-every-day.git"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "24hour",
+    "cooldown"
+  ],
+  "author": "@shane on Discord",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/shatindle/one-message-every-day/issues"
+  },
+  "homepage": "https://github.com/shatindle/one-message-every-day#readme",
+  "dependencies": {
+    "discord.js": "^14.11.0",
+    "dotenv": "^16.0.3",
+    "sprintf-js": "^1.1.2"
+  }
+}

@@ -1,0 +1,13 @@
+version: '2'
+
+networks:
+  default:
+
+services:
+  one-message-every-day:
+    build: .
+    restart: unless-stopped
+    networks:
+      - default
+    env_file:
+      - .env
