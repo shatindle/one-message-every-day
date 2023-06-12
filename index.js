@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-const { Client, Events, GatewayIntentBits } = require('discord.js');
+const { Client, Events, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 const { vsprintf } = require("sprintf-js");
 
 const client = new Client({ 
@@ -19,6 +19,9 @@ const onlyNumbers = /\d+/;
 const cooldowns = {};
 
 function expireCooldown(guildId, channelId, time) {
+    const now = new Date().valueOf();
+    console.log(`Begin Channel: ${channelId} Start: ${now} End: ${time}`);
+
     // return a timer that will expire the cooldown
     return setTimeout(async () => {
         try {
@@ -31,6 +34,8 @@ function expireCooldown(guildId, channelId, time) {
             await channel.setTopic(newDescription);
 
             delete cooldowns[channelId];
+
+            console.log(`End Channel: ${channelId} Start: ${now} End: ${time}`);
         } catch (err) {
             console.log(`Error expiring timeout: ${err}`);
         }
@@ -41,7 +46,7 @@ function expireCooldown(guildId, channelId, time) {
  * 
  * @param {import('discord.js').Channel} channel 
  */
-async function applyCooldown(channel, startup) {
+async function applyCooldown(channel, startup, userId) {
     try {
         // check the channel description to see if a cooldown should be enforced
         const description = channel.topic;
@@ -60,9 +65,12 @@ async function applyCooldown(channel, startup) {
             const hasUntilTime = description.match(channelCooldownRegex);
 
             if (hasUntilTime) {
+                // if the channel already has an until time, just exit
                 let [_, untilTime] = hasUntilTime;
 
                 if (untilTime) {
+                    if (startup) console.log(`Cooldown on startup status is ${!!hasUntilTime} at ${new Date().valueOf()}. Time until: ${untilTime}`);
+                    else if (userId) console.log(`User posted in a channel they shouldn't have been able to.  Channel ${channel.id} User ${userId} At ${new Date().valueOf()}`);
                     // enforce the cooldown and exit
                     // untilTime is in seconds, not milliseconds
                     const time = parseInt(untilTime);
@@ -70,6 +78,11 @@ async function applyCooldown(channel, startup) {
 
                     if (untilTime < new Date().valueOf()) {
                         // the time already expired
+                        if (cooldowns[channel.id]) {
+                            clearTimeout(cooldowns[channel.id]);
+                            delete cooldowns[channel.id];
+                        }
+
                         cooldowns[channel.id] = expireCooldown(channel.guildId, channel.id, 0);
                         return;
                     }
@@ -81,7 +94,7 @@ async function applyCooldown(channel, startup) {
                         delete cooldowns[channel.id];
                     }
 
-                    const remainingTime = time - new Date().valueOf();
+                    const remainingTime = untilTime - new Date().valueOf();
     
                     cooldowns[channel.id] = expireCooldown(channel.guildId, channel.id, remainingTime);
             
@@ -91,6 +104,9 @@ async function applyCooldown(channel, startup) {
     
                     return;
                 }
+            } else {
+                if (startup) console.log(`Cooldown on startup status is ${!!hasUntilTime} at ${new Date().valueOf()}.`);
+                else if (userId) console.log(`User posted in a channel that should be cooled down.  Channel ${channel.id} User ${userId} At ${new Date().valueOf()}`);
             }
 
             if (startup) return;
@@ -142,6 +158,18 @@ client.on(Events.ClientReady, async () => {
     }
 });
 
-client.on(Events.MessageCreate, async (message) => await applyCooldown(message.channel));
+client.on(Events.MessageCreate, async (message) => {
+    try {
+        // ignore bots
+        if (message.member.user.bot) return;
+
+        // ignore the admin posting
+        if (message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+
+        await applyCooldown(message.channel, false, message.member.user.id);
+    } catch (err) {
+        console.log(`Error with new message: ${err.message}`);
+    }
+});
 
 client.login(process.env.TOKEN);
