@@ -166,7 +166,15 @@ client.on(Events.MessageCreate, async (message) => {
         // ignore the admin posting
         if (message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
 
-        await applyCooldown(message.channel, false, message.member.user.id);
+        let user = "UNKNOWN";
+
+        try {
+            user = message.author.id;
+        } catch (errr) {
+            console.log(`Unable to get user ID: ${errr.message}`);
+        }
+
+        await applyCooldown(message.channel, false, user);
     } catch (err) {
         console.log(`Error with new message: ${err.message}`);
     }
