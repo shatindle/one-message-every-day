@@ -1,11 +1,14 @@
-version: '2'
+version: '3'
 
 networks:
   default:
 
 services:
   one-message-every-day:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: sethwrites-tmf-bot
     restart: unless-stopped
     networks:
       - default
